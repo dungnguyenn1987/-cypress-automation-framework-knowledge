@@ -1,11 +1,17 @@
 # Differences between Cypress and Selenium
+<details>
+  
 - Selenium supports all major languages like C#, Java, Python, JavaScript, Ruby etc.Cypress Supports only JavaScript/Typescript languages
 - Selenium Commands are executed through web drivers, Cypress Commands Executed directly on the browser
 - Selenium Supports all major browsers chrome,Edge, Internet Explorer, Safari, Firefox. Cypress supports only Chrome, Edge and Firefox
 - With Selenium Configuration of drivers and language biding should be done by our own. With Cypress we get ready framework available we just need to install.
 - Selenium Appium can we used to test native mobile applications. Cypress doesn’t support any native mobile application testing
 
+</details>
+
 # Advantages of Cypress
+<details>
+  
 - Cypress is NodeJS modern framework so it works seamlessly with Single Page applications and internal Ajax calls.
 - Cypress provides Time Travel options, so It takes snapshots of each tests, after execution we can see what happened exactly in each step. We don’t have to do any configuration for this this comes by default with cypress.
 - Cypress Debuggability feature provides access to developer tools on the browser so we can debug directly in the browser.
@@ -14,15 +20,23 @@
 - Cypress runs tests and executes commands directly on browser so it is less flaky.
 - Cypress provides Video Capture option we can record whole set of tests execution.
 
+</details>
+  
 # Cypress structure
+<details>
+  
 **cypress** folder is main folder located in the project root folder that contains:
 - **cypress.json**: specify any custom configuration
 - **Fixtures** folder can be used to store our external Json data files and we can use these files in our tests using the command `cy.fixture()`.
 - **Integration** folder mainly consists of our actual spec/test files
 - **Plugins** folder contains special files that executes in Node before project is loaded, before the browser launches, and during/before/after your test execution (pre processers and post processors)
 - **Support** folder contains the special file `index.js` which will be run before each and every test. Support folder can also be used to create utility methods,  Custom commands or global overrides.
+
+</details>
   
 # Installation
+<details>
+  
 * Nodejs 18.x, 20.x, 22.x and above 
     * Download https://nodejs.org/en
     * Check installed `node -v`
@@ -43,7 +57,11 @@
 
 ![image](https://github.com/user-attachments/assets/a56acb8c-c49d-4390-a53a-98e7e8fbdd0e)
 
+</details>
+  
 # Core Concepts
+<details>
+  
 * Cypress commands do not **return** their subjects, they **yield** them. Remember: Cypress commands are asynchronous and commands don't do anything at the moment they are invoked, but rather enqueue themselves to be run later. Use aliases and closures to access and store the returned values what Commands yield you. During execution, subjects are yielded from one command to the next, and a lot of helpful Cypress code runs between each command to ensure everything is in order.
 
 * Cypress selectors:
@@ -260,7 +278,11 @@ it('has access to text', function () { // NOTE:  Accessing aliases as properties
 })
 ```
 
+</details>
+
 # API Test
+<details>
+  
 * Make HTTP request
 
 ```
@@ -330,9 +352,92 @@ cy.request({
 })
 ```
 
+</details>
 
+# Cucumber test
+<details>
+  
+1. Install plugin:
+`npm i @badeball/cypress-cucumber-preprocessor`
+`npm i @bahmutov/cypress-esbuild-preprocessor`
+
+2. Configure Cypress to use the plugins
+
+```
+// cypress/plugins/index.js
+const createEsbuildPlugin = require('@badeball/cypress-cucumber-preprocessor/esbuild').createEsbuildPlugin
+const createBundler = require('@bahmutov/cypress-esbuild-preprocessor')
+const addCucumberPreprocessorPlugin = require('@badeball/cypress-cucumber-preprocessor').addCucumberPreprocessorPlugin
+module.exports = async (on, config) => {
+  
+  const bundler = createBundler({
+    plugins: [createEsbuildPlugin(config)],
+  })
+  await addCucumberPreprocessorPlugin(on, config)
+  on('file:preprocessor', bundler)
+
+  return config
+}
+```
+
+3. Modify the default configuration of the Cucumber preprocessor
+
+```
+// package.json
+"cypress-cucumber-preprocessor": {
+  "stepDefinitions": [
+    "cypress/e2e/[filepath]/**/*.{js,ts}",
+    "cypress/e2e/[filepath].{js,ts}",
+    "cypress/support/step_definitions/**/*.{js,ts}",
+  ]
+}
+```
+
+
+4. Feature test
+
+```
+# cypress/e2e/board.feature
+Feature: Board functionality
+
+  Scenario: Creating a <listName> list within a board
+    Given I am on empty home page
+    When I type in "<boardName>" and submit
+    And Create a list with the name "<listName>"
+    Then I should be redirected to the board detail
+
+  Examples:
+      | boardName | listName |
+      | Shopping list | Groceries |
+      | Rocket launch | Preflight checks |
+```
+
+5. Step definitions
+
+```
+# cypress/e2e/board.ts (same folder of feature or in the config path)
+import { When, Then, Given } from "@badeball/cypress-cucumber-preprocessor";
+import homePage from "../../pageObjects/home-page"
+
+Given("I am on empty home page", () => {
+  homePage.visit();
+});
+
+When("I type in {string} and submit", (boardName) => {
+  homePage.typeBoardName(`${boardName}{enter}`);
+});
+
+Then("I should be redirected to the board detail", () => {
+  cy.location("pathname").should('match', /\/board\/\d/);
+});
+
+```
+
+</details>
 
 # Troubleshoot
+<details>
+  
 ## Click but no action
 * Likely Cause
     * The application was slow to respond, while Cypress was fast to act
@@ -352,3 +457,5 @@ cy.request({
         expect($el).to.not.be.visible
     })
     ```
+
+</details>
