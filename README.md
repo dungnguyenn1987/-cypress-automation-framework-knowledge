@@ -402,34 +402,71 @@ Feature: Board functionality
 
   Scenario: Creating a <listName> list within a board
     Given I am on empty home page
+    And There are the existing boards
+            | id    | name          | status |
+            | SL001 | Shopping list | ACTIVE |
     When I type in "<boardName>" and submit
     And Create a list with the name "<listName>"
     Then I should be redirected to the board detail
 
   Examples:
-      | boardName | listName |
-      | Shopping list | Groceries |
+      | boardName     | listName         |
+      | Shopping list | Groceries        |
       | Rocket launch | Preflight checks |
 ```
 
 5. Step definitions
 
 ```
-# cypress/e2e/board.ts (same folder of feature or in the config path)
+# cypress/e2e/board.js (same folder of feature or in the config path)
 import { When, Then, Given } from "@badeball/cypress-cucumber-preprocessor";
 import homePage from "../../pageObjects/home-page"
 
 Given("I am on empty home page", () => {
-  homePage.visit();
+  homePage.open();
 });
 
+Given(/^There are the existing boards$/, function (datatable) {
+  datatable.hashes().forEach(data => {
+    // call funtion to create board by data.id, data.name, data.status
+  })
+})
 When("I type in {string} and submit", (boardName) => {
-  homePage.typeBoardName(`${boardName}{enter}`);
+  homePage.typeName(`${boardName}{enter}`);
 });
 
 Then("I should be redirected to the board detail", () => {
   cy.location("pathname").should('match', /\/board\/\d/);
 });
+
+```
+
+6. Page Objects
+
+```
+# cypress/pageObjects/homepage.js
+import basePage from "base-page"
+
+class HomePage {
+
+  elements = {
+    txtId: () => cy.getBySel('id'),
+    txtName: () => cy.getBySel('name'),
+    lblBoard:() => cy.getBySel('boardName')
+  }
+  open() {
+     cy.visit("/")
+  }
+  getId() {
+    this.elements.txtId().invoke('attr', 'value').as('id')
+  }
+
+  typeName(value) {
+    basePage.clearAndType(this.elements.txtName(), value);
+  }
+}
+const homePage = new HomePage()
+export default homePage
 
 ```
 
