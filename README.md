@@ -1,3 +1,27 @@
+# Differences between Cypress and Selenium
+- Selenium supports all major languages like C#, Java, Python, JavaScript, Ruby etc.Cypress Supports only JavaScript/Typescript languages
+- Selenium Commands are executed through web drivers, Cypress Commands Executed directly on the browser
+- Selenium Supports all major browsers chrome,Edge, Internet Explorer, Safari, Firefox. Cypress supports only Chrome, Edge and Firefox
+- With Selenium Configuration of drivers and language biding should be done by our own. With Cypress we get ready framework available we just need to install.
+- Selenium Appium can we used to test native mobile applications. Cypress doesn’t support any native mobile application testing
+
+# Advantages of Cypress
+- Cypress is NodeJS modern framework so it works seamlessly with Single Page applications and internal Ajax calls.
+- Cypress provides Time Travel options, so It takes snapshots of each tests, after execution we can see what happened exactly in each step. We don’t have to do any configuration for this this comes by default with cypress.
+- Cypress Debuggability feature provides access to developer tools on the browser so we can debug directly in the browser.
+- Cypress Automatically waits for commands and assertions or any animation to complete so most of the time we don’t have to put additional sleep in our tests.
+- Since Cypress directly executes commands on browser it is quite faster compared to Selenium based tools.
+- Cypress runs tests and executes commands directly on browser so it is less flaky.
+- Cypress provides Video Capture option we can record whole set of tests execution.
+
+# Cypress structure
+**cypress** folder is main folder located in the project root folder that contains:
+- **cypress.json**: specify any custom configuration
+- **Fixtures** folder can be used to store our external Json data files and we can use these files in our tests using the command `cy.fixture()`.
+- **Integration** folder mainly consists of our actual spec/test files
+- **Plugins** folder contains special files that executes in Node before project is loaded, before the browser launches, and during/before/after your test execution (pre processers and post processors)
+- **Support** folder contains the special file `index.js` which will be run before each and every test. Support folder can also be used to create utility methods,  Custom commands or global overrides.
+  
 # Installation
 * Nodejs 18.x, 20.x, 22.x and above 
     * Download https://nodejs.org/en
@@ -22,14 +46,65 @@
 # Core Concepts
 * Cypress commands do not **return** their subjects, they **yield** them. Remember: Cypress commands are asynchronous and commands don't do anything at the moment they are invoked, but rather enqueue themselves to be run later. Use aliases and closures to access and store the returned values what Commands yield you. During execution, subjects are yielded from one command to the next, and a lot of helpful Cypress code runs between each command to ensure everything is in order.
 
+* Cypress selectors:
+     * CSS Selectors is the selectors supported by Cypress. For using xpath locator, need to install cypress-xpath plugin.
+     * Cypress prefer elements with attribute: data-cy, data-test, data-testid
+     * Access shadow DOM
+ 
+```
+Shadow DOM allows hidden DOM trees to be attached to elements in the regular DOM tree — this shadow DOM tree starts with a shadow root.
+
+<div class="shadow-host">
+#shadow-root
+<button class="my-button">Click me</button>
+</div>
+
+We can access the above shadow dom using below code in cypress
+cy.get('.shadow-host').shadow().find('.my-button').click()
+```
+
+* Element Interaction
+     * Text Content
+ 
+```
+<div>Hello&nbsp;world</div>
+
+// Assert on an element's text content:
+cy.get('div').should('have.text', 'Hello\u00a0world')
+
+// Get element by/filter by text content
+cy.contains('div', 'Hello world')
+cy.get('li').filter(':contains("Services")').should('have.length', 2)
+
+// Work with text content
+cy.get('div').should(($div) => {
+  const text = $div.text()
+   ...
+})
+cy.get('div').invoke('text').then(parseFloat).should('be.gt', 10)
+cy.get('div')
+  .invoke('text')
+  .then((text1) => {
+    // do more work here
+  })
+``` 
+
+   * In some cases, your DOM element will not be actionable. Cypress gives you a powerful `{force:true}` option you can pass to most action commands.
+```
+cy.get('.checkbox').check({ force: true })
+```
+     
+   * Iterate table and list of rows and data
+```
+cy.get('#customers').get('tbody tr td').each(($ele)=>{
+   cy.log($ele.text());
+})
+```
+     
 * Debug commands
     * cy.pause()
     * cy.debug()
     * debugger
-* Cypress prefer elements with:
-    * data-cy
-    * data-test
-    * data-testid
 
 * Cypress wraps all DOM queries with robust **retry-and-timeout (automatical wait)**  logic that better suits how real web apps work in default timeout
     * Custom global timeout https://docs.cypress.io/app/references/configuration#Timeouts
@@ -66,6 +141,42 @@ Consider the above script (*):  `cy.get()` queries the application's DOM, finds 
     * ✅ If the assertion passes, then .should() finishes successfully.
 
     * 🚨 If the assertion fails, then Cypress will requery the application's DOM again - starting from the top of the chain of linked queries. It will look for elements that match .get().find() again, and re-run the assertion. If the assertion still fails, Cypress continues retrying until the timeout is reached.
+* Cypress by default doesn’t support, working with new windows so we need to follow different approach by disable attribute to open new tab.
+```
+cy.get('a[href*="google"]').invoke('removeAttr', 'target').click()
+```
+
+* Preserve cookies in Cypress: Cypress by default clear the cookies after every test. For preserve cookies
+```
+beforeEach(() => {
+      Cypress.Cookies.preserveOnce('session_id', 'remember_token')
+});
+```
+
+*  Custom commands in Cypress
+```
+cypress/support/command.js
+Cypress.Commands.add("login", (username, password) => {
+  cy.get("#username").type(username);
+  cy.get("#password").type(password);
+  cy.get("#login").click();
+});
+
+test file
+cy.visit("http://mysite.com/login.html");
+cy.login('Myusername','My Passowrd');
+```
+
+* Handle window alert in cypress
+```
+Cypress.on("uncaught:exception", (err, runnable) => {
+// returning false here prevents Cypress from failing the test
+return false;
+});
+
+cy.visit("https://test.com/popups");
+cy.get('[name="alert"]').click(); //This will handle the pop up internally
+```
 
 # Variables and Aliases
 * You CANNOT assign or work with the return values of any Cypress command. To access what each Cypress command yields you use `.then()`.
@@ -75,7 +186,7 @@ cy
   // Find the el with id 'some-link'
   .get('#some-link')
 
-  .then(($myElement) => { //When the previous command cy.get('button') resolves, it will call your callback function with the yielded subject as the first argument.
+  .then(($myElement) => { //When the previous command cy.get() resolves, it will call your callback function with the yielded subject as the first argument.
 
     // grab its href property
     const href = $myElement.prop('href')
@@ -149,6 +260,78 @@ it('has access to text', function () { // NOTE:  Accessing aliases as properties
 })
 ```
 
+# API Test
+* Make HTTP request
+
+```
+// GET request
+cy.request('http://localhost:8080/db/seed')
+
+// POST request
+cy.request('POST', 'http://localhost:8888/users/admin', { name: 'Jane' }).then(
+  (response) => {
+    // response.body is automatically serialized into JSON
+    expect(response.body).to.have.property('name', 'Jane') // true
+  }
+)
+```
+
+* Request Polling
+Call cy.request() over and over again
+  
+```
+// a regular ol' function folks
+function req () {
+  cy
+    .request(...)
+    .then((resp) => {
+      // if we got what we wanted
+
+      if (resp.status === 200 && resp.body.ok === true)
+        // break out of the recursive loop
+        return
+
+      // else recurse
+      req()
+    })
+}
+
+cy
+  // do the thing causing the side effect
+  .get('button').click()
+
+  // now start the requests
+  .then(req)
+
+```
+
+* Download a PDF file
+
+```
+cy.request({
+  url: 'http://localhost:8080/some-document.pdf',
+  encoding: 'binary',
+}).then((response) => {
+  cy.writeFile('path/to/save/document.pdf', response.body, 'binary')
+})
+```
+
+* Get Data URL of an image
+
+```
+cy.request({
+  url: 'https://docs.cypress.io/img/logo.png',
+  encoding: 'base64',
+}).then((response) => {
+  const base64Content = response.body
+  const mime = response.headers['content-type'] // or 'image/png'
+  // see https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs
+  const imageDataUrl = `data:${mime};base64,${base64Content}`
+})
+```
+
+
+
 # Troubleshoot
 ## Click but no action
 * Likely Cause
@@ -169,4 +352,3 @@ it('has access to text', function () { // NOTE:  Accessing aliases as properties
         expect($el).to.not.be.visible
     })
     ```
-
